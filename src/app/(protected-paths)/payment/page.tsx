@@ -1,9 +1,130 @@
-import React from 'react'
+"use client";
 
-function payment() {
-  return (
-    <div>payment</div>
-  )
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import RequireAuth from "@/components/RequireAuth";
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
 }
 
-export default payment
+export default function PaymentPage() {
+  const router = useRouter();
+  const [isScriptReady, setIsScriptReady] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Load Razorpay script (no-op if already present)
+  useEffect(() => {
+    if (window.Razorpay) {
+      setIsScriptReady(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => setIsScriptReady(true);
+    script.onerror = () => setIsScriptReady(false);
+    document.body.appendChild(script);
+  }, []);
+
+  const startPayment = async () => {
+    setIsProcessing(true);
+    try {
+      // TODO: Replace with your server call to create Razorpay order
+      // const res = await fetch('/api/create-order', { method: 'POST' })
+      // const { orderId, amount, currency } = await res.json()
+      const orderId = "order_DUMMY123";
+      const amount = 500 * 100; // in paise
+      const currency = "INR";
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? "rzp_test_xxxxxx",
+        amount,
+        currency,
+        name: "CMR Ticket System",
+        description: "Ticket purchase",
+        order_id: orderId,
+        theme: { color: "#ffffff" },
+        handler: function () {
+          router.replace("/payment/success");
+        },
+        modal: {
+          ondismiss: function () {
+            setIsProcessing(false);
+          },
+        },
+        prefill: {
+          email: "user@example.com",
+          contact: "9999999999",
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (e) {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <RequireAuth>
+      <div className="min-h-dvh w-full bg-black text-neutral-200 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+        {/* Payment Card */}
+        <div className="rounded-[28px] bg-neutral-900/80 ring-1 ring-white/10 shadow-2xl overflow-hidden relative">
+          <div className="pointer-events-none absolute -top-20 -left-20 h-44 w-44 rounded-full bg-white/8 blur-3xl" />
+          <div className="pointer-events-none absolute top-0 right-0 h-20 w-20 rounded-bl-[28px] bg-white/5" />
+          <div className="p-6 sm:p-8">
+            <h1 className="text-2xl font-semibold">Payment</h1>
+            <p className="mt-1 text-sm text-neutral-400">Review your order and proceed to payment.</p>
+
+            {/* Order Summary card */}
+            <div className="mt-6 rounded-2xl bg-neutral-950 ring-1 ring-white/10 p-4 transition-colors">
+              <p className="font-medium">Order Summary</p>
+              <div className="mt-3 space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-400">Entry Type</span>
+                  <span>Solo</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-400">Tickets</span>
+                  <span>1</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-400">Price</span>
+                  <span>₹500</span>
+                </div>
+                <div className="h-px bg-white/10 my-2" />
+                <div className="flex items-center justify-between font-medium">
+                  <span>Total</span>
+                  <span>₹500</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="mt-6 space-y-3">
+              <button
+                onClick={startPayment}
+                disabled={!isScriptReady || isProcessing}
+                className="w-full h-12 rounded-xl bg-white text-black font-medium ring-1 ring-white/70 shadow-[0_1px_0_0_rgba(255,255,255,0.1)_inset] transition-all duration-300 ease-out hover:bg-neutral-100 active:translate-y-[1px] [--btn-shine:linear-gradient(110deg,rgba(255,255,255,0)_0%,rgba(255,255,255,.25)_40%,rgba(255,255,255,0)_60%)] relative overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <span className="pointer-events-none">Proceed to Payment</span>
+                <span className="absolute inset-0 -translate-x-full hover:translate-x-full transition-transform duration-700 bg-[image:var(--btn-shine)]" />
+              </button>
+
+              <button
+                onClick={() => router.replace("/payment/success")}
+                className="w-full h-12 rounded-xl bg-neutral-900 text-neutral-200 font-medium ring-1 ring-white/10 hover:bg-neutral-800 active:translate-y-[1px] transition-all duration-200 ease-out"
+              >
+                Skip Payment (dummy)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </RequireAuth>
+  );
+}
