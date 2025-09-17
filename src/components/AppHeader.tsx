@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { supabase } from "@/lib/supabase-client";
+import { authClient } from "@/lib/auth-client";
 
 export default function AppHeader() {
   const router = useRouter();
@@ -13,23 +13,26 @@ export default function AppHeader() {
 
   useEffect(() => {
     let isMounted = true;
-    supabase.auth.getUser().then(({ data }) => {
-      if (!isMounted) return;
-      setIsAuthed(!!data.user);
-      setEmail(data.user?.email ?? null);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, sess) => {
-      setIsAuthed(!!sess);
-      setEmail(sess?.user?.email ?? null);
-    });
+    (async () => {
+      try {
+        const { data } = await (authClient as any).session?.get?.();
+        if (!isMounted) return;
+        const emailAddr = (data?.session?.user?.email as string | undefined) ?? null;
+        setIsAuthed(!!data?.session);
+        setEmail(emailAddr);
+      } catch {
+        if (!isMounted) return;
+        setIsAuthed(false);
+        setEmail(null);
+      }
+    })();
     return () => {
-      sub?.subscription?.unsubscribe?.();
       isMounted = false;
     };
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await (authClient as any).signOut?.();
     router.replace("/");
   };
 

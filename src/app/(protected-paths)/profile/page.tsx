@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase-client";
+import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
@@ -14,13 +14,15 @@ export default function ProfilePage() {
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setEmail(data.user?.email ?? "");
+    (async () => {
+      const { data } = await (authClient as any).session?.get?.();
+      const emailAddr = (data?.session?.user?.email as string | undefined) ?? "";
+      setEmail(emailAddr);
       // Pre-fill from localStorage as a simple placeholder profile store
       setName(localStorage.getItem("profile:name") ?? "");
       setDob(localStorage.getItem("profile:dob") ?? "");
       setPhone(localStorage.getItem("profile:phone") ?? "");
-    });
+    })();
   }, []);
 
   const save = async () => {
