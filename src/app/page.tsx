@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { authClient } from "@/lib/auth-client";
+import { supabase } from "@/lib/supabase-client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,19 +12,18 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  // Redirect if already logged in (Better Auth)
+  // Redirect if already logged in
   useEffect(() => {
     let mounted = true;
-    (async () => {
-      try {
-        const { data } = await (authClient as any).session?.get?.();
-        if (!mounted) return;
-        if (data?.session) router.replace("/ticket");
-      } catch {
-        // ignore
-      }
-    })();
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      if (data.session) router.replace("/ticket");
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, sess) => {
+      if (sess) router.replace("/ticket");
+    });
     return () => {
+      sub?.subscription?.unsubscribe?.();
       mounted = false;
     };
   }, [router]);
@@ -34,9 +33,11 @@ export default function LoginPage() {
     setError(null);
     setMessage(null);
     try {
-      const { error } = await (authClient as any).emailOtp?.sendVerificationOtp?.({
+      const { error } = await supabase.auth.signInWithOtp({
         email,
-        type: "sign-in",
+        options: {
+          shouldCreateUser: true,
+        },
       });
       if (error) throw error;
       setMessage("OTP sent to your email. Enter the 6-digit code.");
@@ -53,12 +54,17 @@ export default function LoginPage() {
     setError(null);
     setMessage(null);
     try {
-      const { error } = await (authClient as any).signIn?.emailOtp?.({
+      const { data, error } = await supabase.auth.verifyOtp({
         email,
-        otp,
+        token: otp,
+        type: "email",
       });
       if (error) throw error;
-      router.replace("/ticket");
+      if (data?.session) {
+        router.replace("/ticket");
+      } else {
+        throw new Error("Invalid OTP");
+      }
     } catch (e: any) {
       setError(e?.message ?? "Invalid OTP");
     } finally {

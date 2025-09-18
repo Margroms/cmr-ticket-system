@@ -1,6 +1,4 @@
 import { betterAuth } from "better-auth";
-import { prismaAdapter } from "better-auth/adapters/prisma";
-import { PrismaClient } from "@prisma/client";
 import { emailOTP } from "better-auth/plugins";
 import nodemailer from "nodemailer";
 
@@ -14,22 +12,14 @@ const transporter = nodemailer.createTransport({
   } : undefined,
 });
 
-const prisma = new PrismaClient();
-
 export const auth = betterAuth({
   baseURL: process.env.NEXT_PUBLIC_APP_URL,
   secret: process.env.BETTER_AUTH_SECRET,
-  database: prismaAdapter(prisma, { provider: "postgresql" }),
   // If you want to restrict signup later, set disableSignUp: true
   plugins: [
     emailOTP({
       // overrideDefaultEmailVerification: true,
       async sendVerificationOTP({ email, otp, type }) {
-        // Simple dev-friendly fallback: log OTP if SMTP is not configured
-        if (!process.env.SMTP_HOST) {
-          console.log(`[Better Auth] OTP for ${email} (${type}): ${otp}`);
-          return;
-        }
         const subject =
           type === "sign-in"
             ? "Your sign-in OTP"

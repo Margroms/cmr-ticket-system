@@ -10,6 +10,5 @@ export const PUT = auth.handler;
 export const DELETE = auth.handler;
 export const PATCH = auth.handler;
 export const HEAD = auth.handler;
-export const OPTIONS = auth.handler;
 
 

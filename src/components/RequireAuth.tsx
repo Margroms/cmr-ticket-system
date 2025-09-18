@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { authClient } from "@/lib/auth-client";
+import { supabase } from "@/lib/supabase-client";
 
 export default function RequireAuth({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -11,22 +11,19 @@ export default function RequireAuth({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     let mounted = true;
-    (async () => {
-      try {
-        const { data, error } = await (authClient as any).session?.get?.();
-        if (!mounted) return;
-        const has = !!data?.session && !error;
-        setAuthed(has);
-        setChecking(false);
-        if (!has) router.replace("/");
-      } catch {
-        if (!mounted) return;
-        setAuthed(false);
-        setChecking(false);
-        router.replace("/");
-      }
-    })();
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      const has = !!data.session;
+      setAuthed(has);
+      setChecking(false);
+      if (!has) router.replace("/");
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, sess) => {
+      setAuthed(!!sess);
+      if (!sess) router.replace("/");
+    });
     return () => {
+      sub?.subscription?.unsubscribe?.();
       mounted = false;
     };
   }, [router]);
