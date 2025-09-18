@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import RequireAuth from "@/components/RequireAuth";
+import { supabase } from "@/lib/supabase-client";
+import QRCode from "qrcode";
 
 type EntryType = "Solo" | "Couple" | "Group";
 
@@ -12,10 +14,25 @@ const ENTRY_PRICES: Record<EntryType, number> = {
   Group: 2000,
 };
 
+type TicketRecord = {
+  id: string;
+  user_id: string;
+  user_email: string | null;
+  order_id: string;
+  payment_id: string;
+  amount: number;
+  currency: string;
+  status: string;
+  created_at: string;
+};
+
 export default function TicketPage() {
   const router = useRouter();
   const [entryType, setEntryType] = useState<EntryType>("Solo");
   const [count, setCount] = useState<number>(1);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [ticket, setTicket] = useState<TicketRecord | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
   const pricePerTicket = ENTRY_PRICES[entryType];
   const totalPrice = useMemo(() => count * pricePerTicket, [count, pricePerTicket]);
@@ -23,6 +40,93 @@ export default function TicketPage() {
   const changeCount = (delta: number) => {
     setCount((c) => Math.max(1, c + delta));
   };
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user?.id;
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
+      const { data, error } = await supabase
+        .from("tickets")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!mounted) return;
+      if (error) {
+        setTicket(null);
+      } else if (data) {
+        setTicket(data as TicketRecord);
+        try {
+          const payload = JSON.stringify({
+            id: data.id,
+            order_id: data.order_id,
+            payment_id: data.payment_id,
+            amount: data.amount,
+            currency: data.currency,
+          });
+          const url = await QRCode.toDataURL(payload, { margin: 1, width: 512 });
+          setQrDataUrl(url);
+        } catch {
+          setQrDataUrl(null);
+        }
+      }
+      setLoading(false);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <RequireAuth>
+        <div className="min-h-dvh w-full bg-black text-neutral-200 flex items-center justify-center p-4">
+          <div className="text-neutral-400">Loading…</div>
+        </div>
+      </RequireAuth>
+    );
+  }
+
+  if (ticket) {
+    return (
+      <RequireAuth>
+        <div className="min-h-dvh w-full bg-black text-neutral-200 flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-[28px] bg-neutral-900/80 ring-1 ring-white/10 shadow-2xl p-6 relative overflow-hidden">
+            <div className="pointer-events-none absolute -top-16 -left-16 h-40 w-40 rounded-full bg-white/8 blur-2xl" />
+            <div className="pointer-events-none absolute top-0 right-0 h-16 w-16 rounded-bl-[28px] bg-white/5" />
+            <div className="flex items-center gap-3 mb-6">
+              <h1 className="text-xl sm:text-2xl font-semibold">Your Ticket</h1>
+            </div>
+            <div className="rounded-2xl bg-neutral-950 ring-1 ring-white/10 p-4">
+              <div className="mt-1 space-y-2 text-sm">
+                <div className="flex items-center justify-between"><span className="text-neutral-400">Ticket ID</span><span className="text-neutral-200">{ticket.id}</span></div>
+                <div className="flex items-center justify-between"><span className="text-neutral-400">Order ID</span><span className="text-neutral-200">{ticket.order_id}</span></div>
+                <div className="flex items-center justify-between"><span className="text-neutral-400">Payment ID</span><span className="text-neutral-200">{ticket.payment_id}</span></div>
+                <div className="flex items-center justify-between"><span className="text-neutral-400">Amount</span><span className="text-neutral-200">₹{(ticket.amount / 100).toFixed(2)} {ticket.currency}</span></div>
+                <div className="flex items-center justify-between"><span className="text-neutral-400">Status</span><span className="text-neutral-200 capitalize">{ticket.status}</span></div>
+                <div className="flex items-center justify-between"><span className="text-neutral-400">Issued</span><span className="text-neutral-200">{new Date(ticket.created_at).toLocaleString()}</span></div>
+              </div>
+              <div className="mt-4 aspect-square w-full max-w-[240px] mx-auto bg-white rounded-md grid place-items-center overflow-hidden">
+                {qrDataUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={qrDataUrl} alt="Ticket QR" className="w-full h-full object-contain" />
+                ) : (
+                  <span className="text-black text-xs">QR</span>
+                )}
+              </div>
+              <p className="mt-4 text-center text-xs text-neutral-400">Present this QR at entry.</p>
+            </div>
+          </div>
+        </div>
+      </RequireAuth>
+    );
+  }
 
   return (
     <RequireAuth>
