@@ -40,4 +40,16 @@ model EmailOTP {
   @@index([expiresAt])
 }
 
+model Ticket {
+  id                String   @id @default(cuid())
+  supabaseUserId    String
+  userEmail         String?
+  orderId           String   @unique
+  paymentId         String   @unique
+  amount            Int
+  currency          String
+  status            String   @default("paid")
+  createdAt         DateTime @default(now())
+}
+
 

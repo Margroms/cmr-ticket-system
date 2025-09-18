@@ -83,7 +83,7 @@ export default function LoginPage() {
             <label className="block text-sm text-neutral-400">Name</label>
             <input
               type="text"
-              value={(undefined as any) as string}
+              value={""}
               onChange={() => {}}
               placeholder="Your full name"
               className="hidden"

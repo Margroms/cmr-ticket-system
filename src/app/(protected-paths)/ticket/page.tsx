@@ -7,7 +7,7 @@ import RequireAuth from "@/components/RequireAuth";
 type EntryType = "Solo" | "Couple" | "Group";
 
 const ENTRY_PRICES: Record<EntryType, number> = {
-  Solo: 500,
+  Solo: 1,
   Couple: 900,
   Group: 2000,
 };

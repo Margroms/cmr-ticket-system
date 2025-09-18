@@ -25,8 +25,9 @@ export default function LoginPage() {
       if (error) throw error;
       setMessage("OTP sent to your email.");
       setStep("enter-otp");
-    } catch (e: any) {
-      setError(e?.message ?? "Failed to send OTP");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Failed to send OTP";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -43,8 +44,9 @@ export default function LoginPage() {
       });
       if (error) throw error;
       router.replace("/booking");
-    } catch (e: any) {
-      setError(e?.message ?? "Invalid OTP");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Invalid OTP";
+      setError(message);
     } finally {
       setLoading(false);
     }

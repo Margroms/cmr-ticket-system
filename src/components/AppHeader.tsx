@@ -39,7 +39,7 @@ export default function AppHeader() {
       <Link
         href={href}
         className={
-          "h-9 px-3 rounded-lg text-sm font-medium ring-1 transition-colors " +
+          "h-10 px-5 rounded-xl text-sm font-medium ring-1 transition-all flex items-center justify-center " +
           (active
             ? "bg-white text-black ring-white"
             : "bg-neutral-900 text-neutral-300 ring-white/10 hover:bg-neutral-800")
@@ -53,7 +53,25 @@ export default function AppHeader() {
   return (
     <header className="w-full sticky top-0 z-40 bg-black/60 backdrop-blur supports-[backdrop-filter]:bg-black/40">
       <div className="mx-auto max-w-5xl px-6 py-4 flex items-center justify-between">
-        <div />
+        {pathname !== "/" ? (
+          <button
+            onClick={() => {
+              if (typeof window !== "undefined" && window.history.length > 1) {
+                router.back();
+              } else {
+                router.push("/");
+              }
+            }}
+            aria-label="Go back"
+            className="h-10 w-10 rounded-xl ring-1 ring-white/10 hover:bg-neutral-800 flex items-center justify-center text-neutral-300"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+              <path fillRule="evenodd" d="M9.53 4.47a.75.75 0 010 1.06L4.81 10.25H21a.75.75 0 010 1.5H4.81l4.72 4.72a.75.75 0 11-1.06 1.06l-6-6a.75.75 0 010-1.06l6-6a.75.75 0 011.06 0z" clipRule="evenodd" />
+            </svg>
+          </button>
+        ) : (
+          <div />
+        )}
         <nav className="flex items-center gap-3">
           {isAuthed ? (
             <>

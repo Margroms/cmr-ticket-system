@@ -3,10 +3,21 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import RequireAuth from "@/components/RequireAuth";
+import { supabase } from "@/lib/supabase-client";
+
+type RazorpaySuccessResponse = {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+};
+
+type RazorpayConstructor = new (
+  options: Record<string, unknown>
+) => { open: () => void };
 
 declare global {
   interface Window {
-    Razorpay: any;
+    Razorpay: RazorpayConstructor | undefined;
   }
 }
 
@@ -32,38 +43,73 @@ export default function PaymentPage() {
   const startPayment = async () => {
     setIsProcessing(true);
     try {
-      // TODO: Replace with your server call to create Razorpay order
-      // const res = await fetch('/api/create-order', { method: 'POST' })
-      // const { orderId, amount, currency } = await res.json()
-      const orderId = "order_DUMMY123";
-      const amount = 500 * 100; // in paise
-      const currency = "INR";
+      const session = await supabase.auth.getSession();
+      const supabaseUserId = session.data.session?.user?.id;
+      const userEmail = session.data.session?.user?.email ?? undefined;
+      if (!supabaseUserId) throw new Error("Not authenticated");
+
+      const createOrderRes = await fetch("/api/razorpay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: 1 }),
+      });
+      if (!createOrderRes.ok) {
+        const errText = await createOrderRes.text();
+        console.error("Create order failed:", errText);
+        throw new Error("Failed to create order");
+      }
+      const { order, key_id } = await createOrderRes.json();
+      const orderId = order.id;
+      const amount = order.amount; // already in paisa
+      const currency = order.currency;
 
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? "rzp_test_xxxxxx",
+        key: key_id,
         amount,
         currency,
         name: "CMR Ticket System",
         description: "Ticket purchase",
         order_id: orderId,
         theme: { color: "#ffffff" },
-        handler: function () {
-          router.replace("/payment/success");
+        handler: async function (response: RazorpaySuccessResponse) {
+          try {
+            const verifyRes = await fetch("/api/payment/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+            if (!verifyRes.ok) throw new Error("Verification failed");
+            // Create ticket in Supabase
+            await supabase.from("tickets").insert({
+              user_id: supabaseUserId,
+              user_email: userEmail,
+              order_id: response.razorpay_order_id,
+              payment_id: response.razorpay_payment_id,
+              amount,
+              currency,
+              status: "paid",
+            });
+            router.replace("/payment/success");
+          } catch (_err) {
+            setIsProcessing(false);
+          }
         },
         modal: {
           ondismiss: function () {
             setIsProcessing(false);
           },
         },
-        prefill: {
-          email: "user@example.com",
-          contact: "9999999999",
-        },
+        prefill: userEmail ? { email: userEmail } : undefined,
       };
 
-      const rzp = new window.Razorpay(options);
+      const RazorpayCtor = window.Razorpay as RazorpayConstructor;
+      const rzp = new RazorpayCtor(options);
       rzp.open();
-    } catch (e) {
+    } catch (_e) {
       setIsProcessing(false);
     }
   };
@@ -114,14 +160,8 @@ export default function PaymentPage() {
                 <span className="pointer-events-none">Proceed to Payment</span>
                 <span className="absolute inset-0 -translate-x-full hover:translate-x-full transition-transform duration-700 bg-[image:var(--btn-shine)]" />
               </button>
-
-              <button
-                onClick={() => router.replace("/payment/success")}
-                className="w-full h-12 rounded-xl bg-neutral-900 text-neutral-200 font-medium ring-1 ring-white/10 hover:bg-neutral-800 active:translate-y-[1px] transition-all duration-200 ease-out"
-              >
-                Skip Payment (dummy)
-              </button>
             </div>
+          </div>
           </div>
         </div>
       </div>
