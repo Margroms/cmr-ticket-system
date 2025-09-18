@@ -6,9 +6,7 @@ import RequireAuth from "@/components/RequireAuth";
 
 declare global {
   interface Window {
-    Razorpay: {
-      new (options: unknown): { open: () => void };
-    } | undefined;
+    Razorpay: any;
   }
 }
 
@@ -63,14 +61,9 @@ export default function PaymentPage() {
         },
       };
 
-      const RazorpayCtor = window.Razorpay;
-      if (RazorpayCtor) {
-        const rzp = new RazorpayCtor(options);
-        rzp.open();
-      } else {
-        setIsProcessing(false);
-      }
-    } catch {
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (e) {
       setIsProcessing(false);
     }
   };

@@ -13,7 +13,7 @@ export default function RequireAuth({ children }: { children: React.ReactNode })
     let mounted = true;
     (async () => {
       try {
-        const { data, error } = await authClient.session.get();
+        const { data, error } = await (authClient as any).session?.get?.();
         if (!mounted) return;
         const has = !!data?.session && !error;
         setAuthed(has);
