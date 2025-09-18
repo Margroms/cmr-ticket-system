@@ -15,7 +15,7 @@ export default function AppHeader() {
     let isMounted = true;
     (async () => {
       try {
-        const { data } = await (authClient as any).session?.get?.();
+        const { data } = await authClient.session.get();
         if (!isMounted) return;
         const emailAddr = (data?.session?.user?.email as string | undefined) ?? null;
         setIsAuthed(!!data?.session);
@@ -32,7 +32,7 @@ export default function AppHeader() {
   }, []);
 
   const signOut = async () => {
-    await (authClient as any).signOut?.();
+    await authClient.signOut();
     router.replace("/");
   };
 

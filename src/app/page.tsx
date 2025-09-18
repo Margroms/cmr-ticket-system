@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 
+type MinimalAuthClient = {
+  session: { get: () => Promise<{ data?: { session?: unknown } }> };
+  emailOtp: { sendVerificationOtp: (args: { email: string; type: string }) => Promise<{ error?: unknown }> };
+  signIn: { emailOtp: (args: { email: string; otp: string }) => Promise<{ error?: unknown }> };
+};
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -17,7 +23,8 @@ export default function LoginPage() {
     let mounted = true;
     (async () => {
       try {
-        const { data } = await (authClient as any).session?.get?.();
+        const client = authClient as unknown as MinimalAuthClient;
+        const { data } = await client.session.get();
         if (!mounted) return;
         if (data?.session) router.replace("/ticket");
       } catch {
@@ -34,15 +41,17 @@ export default function LoginPage() {
     setError(null);
     setMessage(null);
     try {
-      const { error } = await (authClient as any).emailOtp?.sendVerificationOtp?.({
+      const client = authClient as unknown as MinimalAuthClient;
+      const { error } = await client.emailOtp.sendVerificationOtp({
         email,
         type: "sign-in",
       });
       if (error) throw error;
       setMessage("OTP sent to your email. Enter the 6-digit code.");
       setStep("enter-otp");
-    } catch (e: any) {
-      setError(e?.message ?? "Failed to send email");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to send email";
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -53,14 +62,16 @@ export default function LoginPage() {
     setError(null);
     setMessage(null);
     try {
-      const { error } = await (authClient as any).signIn?.emailOtp?.({
+      const client = authClient as unknown as MinimalAuthClient;
+      const { error } = await client.signIn.emailOtp({
         email,
         otp,
       });
       if (error) throw error;
       router.replace("/ticket");
-    } catch (e: any) {
-      setError(e?.message ?? "Invalid OTP");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Invalid OTP";
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -75,13 +86,7 @@ export default function LoginPage() {
         {step === "enter-email" && (
           <div className="mt-6 space-y-4">
             <label className="block text-sm text-neutral-400">Name</label>
-            <input
-              type="text"
-              value={(undefined as any) as string}
-              onChange={() => {}}
-              placeholder="Your full name"
-              className="hidden"
-            />
+            <div className="hidden" />
             {/* Real name input below */}
             <input
               type="text"

@@ -15,7 +15,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await (authClient as any).session?.get?.();
+      const { data } = await authClient.session.get();
       const emailAddr = (data?.session?.user?.email as string | undefined) ?? "";
       setEmail(emailAddr);
       // Pre-fill from localStorage as a simple placeholder profile store
