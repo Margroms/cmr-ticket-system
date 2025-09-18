@@ -124,7 +124,6 @@ export default function PaymentPage() {
             </div>
           </div>
         </div>
-        </div>
       </div>
     </RequireAuth>
   );
