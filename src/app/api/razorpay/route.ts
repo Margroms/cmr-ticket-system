@@ -26,7 +26,7 @@ export async function POST(req: Request) {
       amount: amountInPaisa,
       currency: "INR",
       receipt: `receipt${Math.floor(Math.random() * 10000)}`,
-      payment_capture: 1,
+      payment_capture: true,
     });
 
     return NextResponse.json({ success: true, order, key_id });

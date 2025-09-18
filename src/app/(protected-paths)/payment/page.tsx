@@ -94,7 +94,7 @@ export default function PaymentPage() {
               status: "paid",
             });
             router.replace("/payment/success");
-          } catch (_err) {
+          } catch {
             setIsProcessing(false);
           }
         },
@@ -109,7 +109,7 @@ export default function PaymentPage() {
       const RazorpayCtor = window.Razorpay as RazorpayConstructor;
       const rzp = new RazorpayCtor(options);
       rzp.open();
-    } catch (_e) {
+    } catch {
       setIsProcessing(false);
     }
   };

@@ -42,8 +42,9 @@ export default function LoginPage() {
       if (error) throw error;
       setMessage("OTP sent to your email. Enter the 6-digit code.");
       setStep("enter-otp");
-    } catch (e: any) {
-      setError(e?.message ?? "Failed to send email");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Failed to send email";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -65,8 +66,9 @@ export default function LoginPage() {
       } else {
         throw new Error("Invalid OTP");
       }
-    } catch (e: any) {
-      setError(e?.message ?? "Invalid OTP");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Invalid OTP";
+      setError(message);
     } finally {
       setLoading(false);
     }

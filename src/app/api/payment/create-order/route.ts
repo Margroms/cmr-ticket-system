@@ -21,13 +21,18 @@ export async function POST(req: NextRequest) {
     });
 
     const order = await instance.orders.create({ amount, currency }).catch((err: unknown) => {
-      const unknownErr = err as { error?: { code?: string; description?: string; message?: string } } | string;
-      const details = (typeof unknownErr === "object" && unknownErr && "error" in unknownErr)
-        ? (unknownErr as any).error
-        : unknownErr;
+      type RazorpayOrderError = { error?: { code?: string; description?: string; message?: string } };
+      const isRazorpayError = (value: unknown): value is RazorpayOrderError =>
+        typeof value === "object" && value !== null && "error" in (value as Record<string, unknown>);
+
+      const details = isRazorpayError(err) ? err.error : err;
       throw new Error(
-        typeof details === "object"
-          ? `${details?.code || "ORDER_ERROR"}: ${details?.description || details?.message || "Failed to create order"}`
+        typeof details === "object" && details !== null
+          ? `${(details as { code?: string }).code || "ORDER_ERROR"}: ${
+              (details as { description?: string; message?: string }).description ||
+              (details as { message?: string }).message ||
+              "Failed to create order"
+            }`
           : String(details)
       );
     });
