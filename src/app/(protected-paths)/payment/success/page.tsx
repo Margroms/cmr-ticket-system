@@ -40,7 +40,6 @@ export default function PaymentSuccessPage() {
           </div>
         </div>
         </div>
-      </div>
     </RequireAuth>
   );
 }
