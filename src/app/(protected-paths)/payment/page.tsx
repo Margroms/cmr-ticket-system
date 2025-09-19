@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import RequireAuth from "@/components/RequireAuth";
 import { supabase } from "@/lib/supabase-client";
 
@@ -23,8 +23,13 @@ declare global {
 
 export default function PaymentPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isScriptReady, setIsScriptReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Get ticket details from URL params
+  const ticketCount = parseInt(searchParams.get('count') || '1', 10);
+  const totalAmount = parseInt(searchParams.get('total') || '399', 10);
 
   // Load Razorpay script (no-op if already present)
   useEffect(() => {
@@ -51,7 +56,7 @@ export default function PaymentPage() {
       const createOrderRes = await fetch("/api/razorpay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: 1 }),
+        body: JSON.stringify({ amount: totalAmount }),
       });
       if (!createOrderRes.ok) {
         const errText = await createOrderRes.text();
@@ -131,21 +136,17 @@ export default function PaymentPage() {
               <p className="font-medium">Order Summary</p>
               <div className="mt-3 space-y-2 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-neutral-400">Entry Type</span>
-                  <span>Solo</span>
-                </div>
-                <div className="flex items-center justify-between">
                   <span className="text-neutral-400">Tickets</span>
-                  <span>1</span>
+                  <span>{ticketCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-neutral-400">Price</span>
-                  <span>₹500</span>
+                  <span className="text-neutral-400">Price per Ticket</span>
+                  <span>₹399</span>
                 </div>
                 <div className="h-px bg-white/10 my-2" />
                 <div className="flex items-center justify-between font-medium">
                   <span>Total</span>
-                  <span>₹500</span>
+                  <span>₹{totalAmount}</span>
                 </div>
               </div>
             </div>

@@ -6,13 +6,7 @@ import RequireAuth from "@/components/RequireAuth";
 import { supabase } from "@/lib/supabase-client";
 import QRCode from "qrcode";
 
-type EntryType = "Solo" | "Couple" | "Group";
-
-const ENTRY_PRICES: Record<EntryType, number> = {
-  Solo: 1,
-  Couple: 900,
-  Group: 2000,
-};
+const TICKET_PRICE = 399;
 
 type TicketRecord = {
   id: string;
@@ -28,14 +22,12 @@ type TicketRecord = {
 
 export default function TicketPage() {
   const router = useRouter();
-  const [entryType, setEntryType] = useState<EntryType>("Solo");
   const [count, setCount] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(true);
   const [ticket, setTicket] = useState<TicketRecord | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
-  const pricePerTicket = ENTRY_PRICES[entryType];
-  const totalPrice = useMemo(() => count * pricePerTicket, [count, pricePerTicket]);
+  const totalPrice = useMemo(() => count * TICKET_PRICE, [count]);
 
   const changeCount = (delta: number) => {
     setCount((c) => Math.max(1, c + delta));
@@ -145,27 +137,6 @@ export default function TicketPage() {
           <h1 className="text-xl sm:text-2xl font-semibold">Select Your Tickets</h1>
         </div>
 
-        {/* Entry type tabs */}
-        <div className="grid grid-cols-3 gap-2">
-          {(["Solo", "Couple", "Group"] as EntryType[]).map((type) => {
-            const active = type === entryType;
-            return (
-              <button
-                key={type}
-                onClick={() => setEntryType(type)}
-                className={
-                  "h-10 rounded-xl text-sm font-medium ring-1 transition-colors duration-200 ease-out " +
-                  (active
-                    ? "bg-white text-black ring-white shadow-sm"
-                    : "bg-neutral-800 text-neutral-300 ring-white/10 hover:bg-neutral-700 hover:ring-white/20")
-                }
-              >
-                {type}
-              </button>
-            );
-          })}
-        </div>
-
         {/* Ticket Count */}
         <div className="mt-6">
           <p className="text-sm text-neutral-400">Ticket Count</p>
@@ -197,16 +168,12 @@ export default function TicketPage() {
           <p className="font-medium text-neutral-200">Summary Card</p>
           <div className="mt-3 space-y-2 text-sm">
             <div className="flex items-center justify-between">
-              <span className="text-neutral-400">Entry Type:</span>
-              <span className="text-neutral-200">{entryType}</span>
-            </div>
-            <div className="flex items-center justify-between">
               <span className="text-neutral-400">Number of Tickets</span>
               <span className="text-neutral-200">{count}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-neutral-400">Price per Ticket</span>
-              <span className="text-neutral-200">₹{pricePerTicket}</span>
+              <span className="text-neutral-200">₹{TICKET_PRICE}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-neutral-400">Total Price</span>
@@ -216,7 +183,7 @@ export default function TicketPage() {
         </div>
 
         <button
-          onClick={() => router.push("/payment")}
+          onClick={() => router.push(`/payment?count=${count}&total=${totalPrice}`)}
           className="mt-6 w-full h-12 rounded-xl bg-white text-black font-medium ring-1 ring-white/70 shadow-[0_1px_0_0_rgba(255,255,255,0.1)_inset] hover:bg-neutral-100 active:translate-y-[1px] transition-all duration-200 ease-out"
         >
           Proceed to Payment
