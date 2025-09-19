@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import RequireAuth from "@/components/RequireAuth";
 import { supabase } from "@/lib/supabase-client";
@@ -21,7 +21,7 @@ declare global {
   }
 }
 
-export default function PaymentPage() {
+function PaymentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isScriptReady, setIsScriptReady] = useState(false);
@@ -167,5 +167,19 @@ export default function PaymentPage() {
         </div>
       </div>
     </RequireAuth>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={
+      <RequireAuth>
+        <div className="min-h-dvh w-full bg-black text-neutral-200 flex items-center justify-center p-4">
+          <div className="text-neutral-400">Loading payment...</div>
+        </div>
+      </RequireAuth>
+    }>
+      <PaymentContent />
+    </Suspense>
   );
 }
