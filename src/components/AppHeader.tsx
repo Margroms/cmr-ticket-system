@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase-client";
 
@@ -70,7 +71,16 @@ export default function AppHeader() {
             </svg>
           </button>
         ) : (
-          <div />
+          <Link href="/" className="flex items-center gap-2">
+            <Image 
+              src="/logo.png" 
+              alt="MARGROS Logo" 
+              width={32} 
+              height={32}
+              className="rounded-lg"
+            />
+            <span className="text-xl font-bold text-white">MARGROS</span>
+          </Link>
         )}
         <nav className="flex items-center gap-3">
           {isAuthed ? (

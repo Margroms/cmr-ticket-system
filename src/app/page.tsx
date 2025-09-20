@@ -1,8 +1,4 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase-client";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -79,7 +75,19 @@ export default function LoginPage() {
       <div className="w-full max-w-md rounded-[28px] bg-neutral-900/80 shadow-2xl ring-1 ring-white/10 p-6 sm:p-8 text-neutral-200 relative overflow-hidden">
         <div className="pointer-events-none absolute -top-24 -left-24 h-48 w-48 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute top-0 right-0 h-20 w-20 rounded-bl-[28px] bg-white/5" />
-        <h1 className="text-center text-3xl font-semibold tracking-tight">Log-in</h1>
+        <div className="text-center">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <Image 
+              src="/logo.png" 
+              alt="MARGROS Logo" 
+              width={48} 
+              height={48}
+              className="rounded-lg"
+            />
+            <span className="text-2xl font-bold text-white">MARGROS</span>
+          </div>
+          <h1 className="text-3xl font-semibold tracking-tight">Welcome Back</h1>
+        </div>
         {step === "enter-email" && (
           <div className="mt-6 space-y-4">
             <label className="block text-sm text-neutral-400">Name</label>
