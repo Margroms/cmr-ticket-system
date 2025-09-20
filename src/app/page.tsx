@@ -85,11 +85,11 @@ export default function LoginPage() {
             <Image 
               src="/logo.png" 
               alt="MARGROS Logo" 
-              width={48} 
-              height={48}
+              width={100} 
+              height={100}
               className="rounded-lg"
             />
-            <span className="text-2xl font-bold text-white">MARGROS</span>
+       
           </div>
           <h1 className="text-3xl font-semibold tracking-tight">Welcome Back</h1>
         </div>

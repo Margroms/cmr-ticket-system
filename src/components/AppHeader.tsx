@@ -71,16 +71,7 @@ export default function AppHeader() {
             </svg>
           </button>
         ) : (
-          <Link href="/" className="flex items-center gap-2">
-            <Image 
-              src="/logo.png" 
-              alt="MARGROS Logo" 
-              width={32} 
-              height={32}
-              className="rounded-lg"
-            />
-            <span className="text-xl font-bold text-white">MARGROS</span>
-          </Link>
+          <> </>
         )}
         <nav className="flex items-center gap-3">
           {isAuthed ? (
@@ -95,12 +86,7 @@ export default function AppHeader() {
               </button>
             </>
           ) : (
-            <Link
-              href="/"
-              className="h-10 px-5 rounded-xl text-sm font-medium bg-white text-black ring-1 ring-white/70 hover:bg-neutral-100 active:translate-y-[1px] transition-all flex items-center justify-center"
-            >
-              Login
-            </Link>
+            <> </>
           )}
         </nav>
       </div>
