@@ -1,68 +1,82 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Html5QrcodeScanner, Html5QrcodeScannerConfig, Html5QrcodeSupportedFormats } from "html5-qrcode";
 
 interface QRScannerProps {
   onScan: (data: string) => void;
   isActive: boolean;
+  title?: string;
 }
 
-export default function QRScanner({ onScan, isActive }: QRScannerProps) {
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+export default function QRScanner({ onScan, isActive, title }: QRScannerProps) {
+  const [scanner, setScanner] = useState<Html5QrcodeScanner | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const scannerRef = useRef<HTMLDivElement>(null);
   const elementId = "qr-reader";
 
-  const stopScanner = () => {
-    if (scannerRef.current) {
-      scannerRef.current.clear()
+  const stopScanner = useCallback(() => {
+    if (scanner) {
+      scanner.clear()
         .then(() => {
-          scannerRef.current = null;
+          setScanner(null);
           setIsScanning(false);
         })
-        .catch((error) => {
-          console.error("Error stopping scanner:", error);
-          scannerRef.current = null;
+        .catch((clearError) => {
+          console.error("Error clearing scanner:", clearError);
+          setScanner(null);
           setIsScanning(false);
         });
     }
-  };
+  }, [scanner]);
 
-  const startScanner = () => {
-    if (scannerRef.current) {
-      return; // Scanner already running
+  const handleScanSuccess = useCallback((decodedText: string) => {
+    console.log("QR Code scanned:", decodedText);
+    onScan(decodedText);
+    stopScanner();
+  }, [onScan, stopScanner]);
+
+  const handleScanError = useCallback((errorMessage: string) => {
+    // Only log non-trivial errors
+    if (!errorMessage.includes("NotFoundException") && !errorMessage.includes("No MultiFormat Readers")) {
+      console.warn("QR Scan error:", errorMessage);
     }
+  }, []);
 
-    const config: Html5QrcodeScannerConfig = {
-      fps: 10,
-      qrbox: { width: 250, height: 250 },
-      rememberLastUsedCamera: true,
-      supportedScanTypes: [Html5QrcodeSupportedFormats.QR_CODE],
-      showTorchButtonIfSupported: true,
-      showZoomSliderIfSupported: true,
-      defaultZoomValueIfSupported: 2,
-    };
+  const startScanner = useCallback(() => {
+    if (scanner || !scannerRef.current) return;
 
-    scannerRef.current = new Html5QrcodeScanner(elementId, config, false);
+    try {
+      const config: Html5QrcodeScannerConfig = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0,
+        rememberLastUsedCamera: true,
+        supportedScanTypes: [Html5QrcodeSupportedFormats.QR_CODE],
+        showTorchButtonIfSupported: true,
+        showZoomSliderIfSupported: true,
+        defaultZoomValueIfSupported: 2,
+      };
 
-    scannerRef.current.render(
-      (decodedText: string) => {
-        console.log("QR Code scanned:", decodedText);
-        onScan(decodedText);
-        stopScanner();
-      },
-      (errorMessage) => {
-        // Handle scan errors silently in most cases
-        // Only show critical errors
-        if (errorMessage.includes("NotFoundException")) {
-          // This is normal when no QR code is in view
-          return;
-        }
-        console.warn("QR Scan error:", errorMessage);
-      }
-    );
+      const newScanner = new Html5QrcodeScanner(elementId, config, false);
 
-    setIsScanning(true);
+      newScanner.render(handleScanSuccess, handleScanError);
+
+      setScanner(newScanner);
+      setIsScanning(true);
+      setError(null);
+    } catch (err) {
+      console.error("Failed to initialize QR scanner:", err);
+      setError("Failed to initialize camera. Please check permissions.");
+    }
+  }, [scanner, handleScanSuccess, handleScanError]);
+
+  const handleManualInput = () => {
+    const qrData = prompt("Enter QR code data manually:");
+    if (qrData?.trim()) {
+      onScan(qrData.trim());
+    }
   };
 
   useEffect(() => {
@@ -73,44 +87,107 @@ export default function QRScanner({ onScan, isActive }: QRScannerProps) {
     }
 
     return () => {
-      if (scannerRef.current) {
-        scannerRef.current.clear().catch(console.error);
+      if (scanner) {
+        stopScanner();
       }
     };
-  }, [isActive, isScanning, onScan]); // Added onScan to dependencies
+  }, [isActive, isScanning, startScanner, stopScanner, scanner]);
+
+  if (!isActive) {
+    return (
+      <div className="text-center p-8">
+        <div className="w-full max-w-md mx-auto h-64 rounded-lg bg-neutral-800 flex items-center justify-center">
+          <p className="text-neutral-400">Scanner not active</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      <div id={elementId} className="w-full max-w-md mx-auto" />
-      
-      {isActive && !isScanning && (
+    <div className="space-y-6">
+      {/* Scanner Header */}
+      <div className="text-center">
+        <div className="flex items-center justify-center gap-3 mb-2">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center ring-2 ring-white/20">
+            <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 16h4" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-semibold text-white">
+            {title || "QR Code Scanner"}
+          </h3>
+        </div>
+        <p className="text-neutral-400 text-sm">
+          Position the QR code within the scanning area
+        </p>
+      </div>
+
+      {/* Scanner Area */}
+      <div className="rounded-2xl bg-neutral-950 ring-1 ring-white/10 p-4 transition-colors">
         <div className="text-center">
+          <div 
+            id={elementId}
+            ref={scannerRef}
+            className="mx-auto w-full max-w-[320px] min-h-[320px] overflow-hidden rounded-xl border-2 border-white/20 bg-black"
+          />
+          
+          {error && (
+            <div className="mt-4 p-3 bg-red-400/10 ring-1 ring-red-400/20 rounded-lg">
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
+
+          {isScanning && (
+            <p className="text-green-400 text-sm mt-3 flex items-center justify-center gap-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              Scanner active - point camera at QR code
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-3">
+        {!isScanning ? (
           <button
             onClick={startScanner}
-            className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+            className="flex-1 h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors flex items-center justify-center gap-2"
           >
-            Start QR Scanner
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            Start Camera
           </button>
-        </div>
-      )}
-
-      {isScanning && (
-        <div className="text-center">
+        ) : (
           <button
             onClick={stopScanner}
-            className="px-6 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium transition-colors"
+            className="flex-1 h-12 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium transition-colors flex items-center justify-center gap-2"
           >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
             Stop Scanner
           </button>
-        </div>
-      )}
+        )}
+        
+        <button
+          onClick={handleManualInput}
+          className="px-6 h-12 rounded-xl bg-neutral-700 hover:bg-neutral-600 text-white font-medium transition-colors flex items-center justify-center gap-2"
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 16h4" />
+          </svg>
+          Manual Input
+        </button>
+      </div>
 
-      {isActive && (
-        <div className="text-center text-sm text-neutral-400">
-          <p>Position the QR code within the scanning area</p>
-          <p>The scanner will automatically detect and process the code</p>
-        </div>
-      )}
+      {/* Info Note */}
+      <div className="p-4 bg-blue-400/10 ring-1 ring-blue-400/20 rounded-xl">
+        <p className="text-blue-300 text-sm">
+          <strong>Tip:</strong> Make sure the QR code is well-lit and clearly visible. 
+          You can also use the manual input option if camera scanning isn&apos;t working.
+        </p>
+      </div>
     </div>
   );
 }
