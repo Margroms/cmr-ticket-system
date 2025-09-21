@@ -14,10 +14,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MARGROS - Ticket Booking App",
-  description: "Book your tickets with MARGROS - Your trusted ticket booking platform",
+  title: "CMR - Ticket Booking App",
+  description: "Book your tickets with CMR - Your trusted ticket booking platform",
   icons: {
-    icon: '/favicon.ico',
+    icon: '/logo.jpeg',
   },
 };
 
