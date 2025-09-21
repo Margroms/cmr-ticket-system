@@ -83,7 +83,7 @@ export default function LoginPage() {
         <div className="text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
             <Image 
-              src="/logo.png" 
+              src="/logo.jpeg" 
               alt="MARGROS Logo" 
               width={48} 
               height={48}
