@@ -42,7 +42,7 @@ declare module 'html5-qrcode' {
   }
 
   export type QrcodeSuccessCallback = (decodedText: string, decodedResult: QrcodeResult) => void;
-  export type QrcodeErrorCallback = (errorMessage: string, error?: any) => void;
+  export type QrcodeErrorCallback = (errorMessage: string, error?: Error) => void;
 
   export class Html5QrcodeScanner {
     constructor(elementId: string, config: Html5QrcodeScannerConfig, verbose?: boolean);
@@ -62,6 +62,6 @@ declare module 'html5-qrcode' {
     stop(): Promise<void>;
     clear(): Promise<void>;
     getState(): number;
-    static getCameras(): Promise<any[]>;
+    static getCameras(): Promise<MediaDeviceInfo[]>;
   }
 }

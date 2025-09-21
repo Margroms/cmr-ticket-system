@@ -71,10 +71,6 @@ export default function AdminDashboard() {
     await processQRData(qrData);
   };
 
-  const handleQRError = (error: string) => {
-    setError(error);
-  };
-
   const startScanning = () => {
     setError(null);
     setSuccess(null);
@@ -261,7 +257,6 @@ export default function AdminDashboard() {
             <div className="space-y-4">
               <QRScanner
                 onScan={handleQRScan}
-                onError={handleQRError}
                 isActive={isScanning}
               />
               <div className="text-center">

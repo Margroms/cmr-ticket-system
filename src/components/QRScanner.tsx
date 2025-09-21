@@ -5,28 +5,28 @@ import { Html5QrcodeScanner, Html5QrcodeScannerConfig, Html5QrcodeSupportedForma
 
 interface QRScannerProps {
   onScan: (data: string) => void;
-  onError: (error: string) => void;
   isActive: boolean;
 }
 
-export default function QRScanner({ onScan, onError, isActive }: QRScannerProps) {
+export default function QRScanner({ onScan, isActive }: QRScannerProps) {
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const elementId = "qr-reader";
 
-  useEffect(() => {
-    if (isActive && !isScanning) {
-      startScanner();
-    } else if (!isActive && isScanning) {
-      stopScanner();
+  const stopScanner = () => {
+    if (scannerRef.current) {
+      scannerRef.current.clear()
+        .then(() => {
+          scannerRef.current = null;
+          setIsScanning(false);
+        })
+        .catch((error) => {
+          console.error("Error stopping scanner:", error);
+          scannerRef.current = null;
+          setIsScanning(false);
+        });
     }
-
-    return () => {
-      if (scannerRef.current) {
-        scannerRef.current.clear().catch(console.error);
-      }
-    };
-  }, [isActive, isScanning]);
+  };
 
   const startScanner = () => {
     if (scannerRef.current) {
@@ -46,7 +46,7 @@ export default function QRScanner({ onScan, onError, isActive }: QRScannerProps)
     scannerRef.current = new Html5QrcodeScanner(elementId, config, false);
 
     scannerRef.current.render(
-      (decodedText: string, decodedResult) => {
+      (decodedText: string) => {
         console.log("QR Code scanned:", decodedText);
         onScan(decodedText);
         stopScanner();
@@ -65,20 +65,19 @@ export default function QRScanner({ onScan, onError, isActive }: QRScannerProps)
     setIsScanning(true);
   };
 
-  const stopScanner = () => {
-    if (scannerRef.current) {
-      scannerRef.current.clear()
-        .then(() => {
-          scannerRef.current = null;
-          setIsScanning(false);
-        })
-        .catch((error) => {
-          console.error("Error stopping scanner:", error);
-          scannerRef.current = null;
-          setIsScanning(false);
-        });
+  useEffect(() => {
+    if (isActive && !isScanning) {
+      startScanner();
+    } else if (!isActive && isScanning) {
+      stopScanner();
     }
-  };
+
+    return () => {
+      if (scannerRef.current) {
+        scannerRef.current.clear().catch(console.error);
+      }
+    };
+  }, [isActive, isScanning, onScan]); // Added onScan to dependencies
 
   return (
     <div className="space-y-4">

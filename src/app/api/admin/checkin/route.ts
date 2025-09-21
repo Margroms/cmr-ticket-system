@@ -34,7 +34,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let updateData: any = {};
+    let updateData: {
+      checked_in?: boolean;
+      checked_in_at?: string | null;
+      checked_in_by?: string | null;
+    } = {};
 
     if (action === "check_in") {
       if (ticket.checked_in) {
