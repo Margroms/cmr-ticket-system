@@ -29,7 +29,9 @@ function PaymentContent() {
 
   // Get ticket details from URL params
   const ticketCount = parseInt(searchParams.get('count') || '1', 10);
-  const totalAmount = parseInt(searchParams.get('total') || '399', 10);
+  const totalAmount = parseInt(searchParams.get('total') || '350', 10);
+  const genderType = searchParams.get('gender') || 'Boy';
+  const pricePerTicket = parseInt(searchParams.get('pricePerTicket') || '350', 10);
 
   // Load Razorpay script (no-op if already present)
   useEffect(() => {
@@ -97,6 +99,9 @@ function PaymentContent() {
               amount,
               currency,
               status: "paid",
+              gender: genderType,
+              ticket_count: ticketCount,
+              price_per_ticket: pricePerTicket,
             });
             router.replace("/payment/success");
           } catch {
@@ -136,12 +141,16 @@ function PaymentContent() {
               <p className="font-medium">Order Summary</p>
               <div className="mt-3 space-y-2 text-sm">
                 <div className="flex items-center justify-between">
+                  <span className="text-neutral-400">Ticket Type</span>
+                  <span>{genderType}</span>
+                </div>
+                <div className="flex items-center justify-between">
                   <span className="text-neutral-400">Tickets</span>
                   <span>{ticketCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-neutral-400">Price per Ticket</span>
-                  <span>₹399</span>
+                  <span>₹{pricePerTicket}</span>
                 </div>
                 <div className="h-px bg-white/10 my-2" />
                 <div className="flex items-center justify-between font-medium">

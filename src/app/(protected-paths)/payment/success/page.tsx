@@ -16,6 +16,10 @@ type TicketRecord = {
   currency: string;
   status: string;
   created_at: string;
+  gender?: string;
+  name?: string;
+  ticket_count?: number;
+  price_per_ticket?: number;
 };
 
 export default function PaymentSuccessPage() {
@@ -50,6 +54,11 @@ export default function PaymentSuccessPage() {
             payment_id: data.payment_id,
             amount: data.amount,
             currency: data.currency,
+            gender: data.gender,
+            user_email: data.user_email,
+            ticket_count: data.ticket_count,
+            price_per_ticket: data.price_per_ticket,
+            created_at: data.created_at,
           });
           const url = await QRCode.toDataURL(payload, { margin: 1, width: 512 });
           setQrDataUrl(url);
@@ -87,6 +96,8 @@ export default function PaymentSuccessPage() {
                 <p className="font-medium">Ticket Details</p>
                 <div className="mt-3 space-y-2 text-sm">
                   <div className="flex items-center justify-between"><span className="text-neutral-400">Ticket ID</span><span>{ticket.id}</span></div>
+                  <div className="flex items-center justify-between"><span className="text-neutral-400">Type</span><span>{ticket.gender || 'Not specified'}</span></div>
+                  <div className="flex items-center justify-between"><span className="text-neutral-400">Count</span><span>{ticket.ticket_count || 1}</span></div>
                   <div className="flex items-center justify-between"><span className="text-neutral-400">Order ID</span><span>{ticket.order_id}</span></div>
                   <div className="flex items-center justify-between"><span className="text-neutral-400">Payment ID</span><span>{ticket.payment_id}</span></div>
                   <div className="flex items-center justify-between"><span className="text-neutral-400">Amount</span><span>₹{(ticket.amount / 100).toFixed(2)} {ticket.currency}</span></div>

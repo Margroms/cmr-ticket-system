@@ -6,7 +6,12 @@ import RequireAuth from "@/components/RequireAuth";
 import { supabase } from "@/lib/supabase-client";
 import QRCode from "qrcode";
 
-const TICKET_PRICE = 399;
+type GenderType = "Boy" | "Girl";
+
+const TICKET_PRICES: Record<GenderType, number> = {
+  Boy: 350,
+  Girl: 150,
+};
 
 type TicketRecord = {
   id: string;
@@ -18,16 +23,20 @@ type TicketRecord = {
   currency: string;
   status: string;
   created_at: string;
+  gender?: string;
+  name?: string;
 };
 
 export default function TicketPage() {
   const router = useRouter();
+  const [genderType, setGenderType] = useState<GenderType>("Boy");
   const [count, setCount] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(true);
   const [ticket, setTicket] = useState<TicketRecord | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
-  const totalPrice = useMemo(() => count * TICKET_PRICE, [count]);
+  const pricePerTicket = TICKET_PRICES[genderType];
+  const totalPrice = useMemo(() => count * pricePerTicket, [count, pricePerTicket]);
 
   const changeCount = (delta: number) => {
     setCount((c) => Math.max(1, c + delta));
@@ -61,6 +70,11 @@ export default function TicketPage() {
             payment_id: data.payment_id,
             amount: data.amount,
             currency: data.currency,
+            gender: data.gender,
+            user_email: data.user_email,
+            ticket_count: data.ticket_count,
+            price_per_ticket: data.price_per_ticket,
+            created_at: data.created_at,
           });
           const url = await QRCode.toDataURL(payload, { margin: 1, width: 512 });
           setQrDataUrl(url);
@@ -98,6 +112,7 @@ export default function TicketPage() {
             <div className="rounded-2xl bg-neutral-950 ring-1 ring-white/10 p-4">
               <div className="mt-1 space-y-2 text-sm">
                 <div className="flex items-center justify-between"><span className="text-neutral-400">Ticket ID</span><span className="text-neutral-200">{ticket.id}</span></div>
+                <div className="flex items-center justify-between"><span className="text-neutral-400">Type</span><span className="text-neutral-200">{ticket.gender || 'Not specified'}</span></div>
                 <div className="flex items-center justify-between"><span className="text-neutral-400">Order ID</span><span className="text-neutral-200">{ticket.order_id}</span></div>
                 <div className="flex items-center justify-between"><span className="text-neutral-400">Payment ID</span><span className="text-neutral-200">{ticket.payment_id}</span></div>
                 <div className="flex items-center justify-between"><span className="text-neutral-400">Amount</span><span className="text-neutral-200">₹{(ticket.amount / 100).toFixed(2)} {ticket.currency}</span></div>
@@ -137,6 +152,29 @@ export default function TicketPage() {
           <h1 className="text-xl sm:text-2xl font-semibold">Select Your Tickets</h1>
         </div>
 
+        {/* Gender selection tabs */}
+        <div className="grid grid-cols-2 gap-2">
+          {(["Boy", "Girl"] as GenderType[]).map((type) => {
+            const active = type === genderType;
+            const price = TICKET_PRICES[type];
+            return (
+              <button
+                key={type}
+                onClick={() => setGenderType(type)}
+                className={
+                  "h-16 rounded-xl text-sm font-medium ring-1 transition-colors duration-200 ease-out flex flex-col items-center justify-center " +
+                  (active
+                    ? "bg-white text-black ring-white shadow-sm"
+                    : "bg-neutral-800 text-neutral-300 ring-white/10 hover:bg-neutral-700 hover:ring-white/20")
+                }
+              >
+                <span className="font-semibold">{type}</span>
+                <span className="text-xs opacity-80">₹{price}</span>
+              </button>
+            );
+          })}
+        </div>
+
         {/* Ticket Count */}
         <div className="mt-6">
           <p className="text-sm text-neutral-400">Ticket Count</p>
@@ -168,12 +206,16 @@ export default function TicketPage() {
           <p className="font-medium text-neutral-200">Summary Card</p>
           <div className="mt-3 space-y-2 text-sm">
             <div className="flex items-center justify-between">
+              <span className="text-neutral-400">Ticket Type</span>
+              <span className="text-neutral-200">{genderType}</span>
+            </div>
+            <div className="flex items-center justify-between">
               <span className="text-neutral-400">Number of Tickets</span>
               <span className="text-neutral-200">{count}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-neutral-400">Price per Ticket</span>
-              <span className="text-neutral-200">₹{TICKET_PRICE}</span>
+              <span className="text-neutral-200">₹{pricePerTicket}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-neutral-400">Total Price</span>
@@ -183,7 +225,7 @@ export default function TicketPage() {
         </div>
 
         <button
-          onClick={() => router.push(`/payment?count=${count}&total=${totalPrice}`)}
+          onClick={() => router.push(`/payment?count=${count}&total=${totalPrice}&gender=${genderType}&pricePerTicket=${pricePerTicket}`)}
           className="mt-6 w-full h-12 rounded-xl bg-white text-black font-medium ring-1 ring-white/70 shadow-[0_1px_0_0_rgba(255,255,255,0.1)_inset] hover:bg-neutral-100 active:translate-y-[1px] transition-all duration-200 ease-out"
         >
           Proceed to Payment
